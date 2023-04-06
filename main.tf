@@ -3,6 +3,8 @@
 
 provider "aws" {
   region = "us-west-2"
+  access_key = "AKIAQAPNV5BV5JO5PKVN"
+  secret_key = "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"
 
   default_tags {
     tags = {
@@ -43,4 +45,23 @@ module "ec2_instances" {
     Terraform   = "true"
     Environment = "dev"
   }
+}
+
+module "iam_account" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-account"
+
+  account_alias = "awesome-company"
+
+  minimum_password_length = 37
+  require_numbers         = false
+}
+module "iam_user" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-user"
+
+  name          = "vasya.pupkin"
+  force_destroy = true
+
+  pgp_key = "keybase:test"
+
+  password_reset_required = false
 }
