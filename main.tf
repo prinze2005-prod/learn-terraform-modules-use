@@ -3,8 +3,7 @@
 
 provider "aws" {
   region = "us-west-2"
-  access_key = "AKIAQAPNV5BV5JO5PKVN"
-  secret_key = "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"
+  shared_credentials_files = ["/Users/adeze/.aws/credentials"]
 
   default_tags {
     tags = {
@@ -19,6 +18,7 @@ module "vpc" {
 
   name = var.vpc_name
   cidr = var.vpc_cidr
+  
 
   azs             = var.vpc_azs
   private_subnets = var.vpc_private_subnets
@@ -34,12 +34,28 @@ module "ec2_instances" {
   version = "4.3.0"
   count   = 2
 
-  name = "my-ec2-cluster"
+  name = "my-ec2-instance"
 
-  ami                    = "ami-0c5204531f799e0c6"
+  # ami                    = "ami-0c5204531f799e0c6" #ubuntu
+  ami                    = "ami-097bd6037de54b1dc"  #rhel
   instance_type          = "t2.micro"
   vpc_security_group_ids = [module.vpc.default_security_group_id]
   subnet_id              = module.vpc.public_subnets[0]
+  key_name               = "sonar"
+  user_data              = <<EOF
+#!/bin/bash
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo dnf upgrade
+# Add required dependencies for the jenkins package
+sudo dnf install java-11-openjdk
+sudo dnf install jenkins
+sudo systemctl daemon-reload
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+sudo systemctl status jenkins
+EOF
 
   tags = {
     Terraform   = "true"
@@ -47,21 +63,23 @@ module "ec2_instances" {
   }
 }
 
-module "iam_account" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-account"
 
-  account_alias = "awesome-company"
 
-  minimum_password_length = 37
-  require_numbers         = false
-}
-module "iam_user" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-user"
+# module "iam_account" {
+#   source  = "terraform-aws-modules/iam/aws//modules/iam-account"
 
-  name          = "vasya.pupkin"
-  force_destroy = true
+#   account_alias = "awesome-company"
 
-  pgp_key = "keybase:test"
+#   minimum_password_length = 37
+#   require_numbers         = false
+# }
+# module "iam_user" {
+#   source  = "terraform-aws-modules/iam/aws//modules/iam-user"
 
-  password_reset_required = false
-}
+#   name          = "vasya.pupkin"
+#   force_destroy = true
+
+#   pgp_key = "keybase:test"
+
+#   password_reset_required = false
+# }
